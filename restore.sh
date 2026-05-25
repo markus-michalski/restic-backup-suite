@@ -16,12 +16,13 @@ if [[ "${TRACE-0}" == "1" ]]; then
     set -o xtrace
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 readonly SCRIPT_DIR
 SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_NAME
 
 CONFIG_FILE="${SCRIPT_DIR}/config.sh"
+[[ ! -f "$CONFIG_FILE" ]] && CONFIG_FILE="/etc/restic/config.sh"
 SNAPSHOT_ID=""
 
 # Runtime state

@@ -16,13 +16,15 @@ if [[ "${TRACE-0}" == "1" ]]; then
     set -o xtrace
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 readonly SCRIPT_DIR
 SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_NAME
 
 # Defaults — overridden by config.sh
+# Fall back to system-wide install location when no local config.sh exists
 CONFIG_FILE="${SCRIPT_DIR}/config.sh"
+[[ ! -f "$CONFIG_FILE" ]] && CONFIG_FILE="/etc/restic/config.sh"
 DRY_RUN=false
 
 # Runtime state
@@ -269,7 +271,7 @@ stop_services() {
 
 # shellcheck disable=SC2317  # Called via cleanup trap
 restart_services() {
-    [[ ${#SERVICES_STOPPED[@]+"${#SERVICES_STOPPED[@]}"} -eq 0 ]] && return 0
+    [[ ${#SERVICES_STOPPED[@]} -eq 0 ]] && return 0
 
     local service
     for service in "${SERVICES_STOPPED[@]}"; do
