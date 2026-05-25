@@ -251,7 +251,7 @@ init_repo_if_needed() {
 # =============================================================================
 
 stop_services() {
-    [[ ${#SERVICES_TO_STOP[@]+"${#SERVICES_TO_STOP[@]}"} -eq 0 ]] && return 0
+    [[ ${#SERVICES_TO_STOP[@]} -eq 0 ]] && return 0
 
     local service
     for service in "${SERVICES_TO_STOP[@]}"; do
