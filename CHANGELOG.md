@@ -25,10 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Nothing yet
 
+## [1.0.1] - 2026-05-25
+
+### Fixed
+- remove all invalid #{array[@]+"..."} substitutions
+- remove remaining bad substitution in stop_services
+- resolve symlink for SCRIPT_DIR, fix bad substitution in restart_services
+
 ## [1.0.0] - 2026-05-25
 
 ### Added
-
 - `backup.sh` — automated restic backup with configurable paths, excludes, and retention policy
 - `restore.sh` — interactive restore menu (full backup, individual paths, DB dumps, SSL certs, custom path)
 - `install.sh` — system-wide installer with symlinks, shell aliases, and optional daily cron job
@@ -42,5 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell aliases via `/etc/profile.d/restic-aliases.sh`: `restic-snapshots`, `restic-stats`, `restic-check`, `restic-ls`, `restic-mount`, `restic-unlock`, `restic-rawstats`
 - ShellCheck CI via GitHub Actions (syntax check + ShellCheck on all `.sh` files)
 
-[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.0.1...HEAD
 [1.0.0]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.0
+[1.0.1]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.1
