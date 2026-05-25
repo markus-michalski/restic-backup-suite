@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Nothing yet
 
+## [1.0.2] - 2026-05-25
+
+### Changed
+- remove release target from Makefile
+
+### Fixed
+- --cron on already-installed system only adds cron job
+
 ## [1.0.1] - 2026-05-25
 
 ### Fixed
@@ -48,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell aliases via `/etc/profile.d/restic-aliases.sh`: `restic-snapshots`, `restic-stats`, `restic-check`, `restic-ls`, `restic-mount`, `restic-unlock`, `restic-rawstats`
 - ShellCheck CI via GitHub Actions (syntax check + ShellCheck on all `.sh` files)
 
-[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.0.2...HEAD
 [1.0.0]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.0
 [1.0.1]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.1
+[1.0.2]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.2
