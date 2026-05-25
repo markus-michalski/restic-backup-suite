@@ -284,6 +284,16 @@ main() {
         exit 0
     fi
 
+    # --cron on an already-installed system: only add the cron job
+    if [[ "$INSTALL_CRON" == "true" && -L "${BIN_DIR}/restic-backup" ]]; then
+        echo ""
+        install_cron
+        echo ""
+        success "Cron job added."
+        echo ""
+        exit 0
+    fi
+
     echo ""
     echo "Installing restic-backup-suite..."
     echo ""
