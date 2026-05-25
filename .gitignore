@@ -24,3 +24,6 @@ logs/
 .idea/
 *.swp
 *.swo
+
+# git
+.git-workflow*
