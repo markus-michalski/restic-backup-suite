@@ -322,7 +322,7 @@ dump_native_mysql() {
 dump_docker_mariadb() {
     local dump_dir="$1"
 
-    [[ ${#DOCKER_MARIADB_CONTAINERS[@]+"${#DOCKER_MARIADB_CONTAINERS[@]}"} -eq 0 ]] && return 0
+    [[ ${#DOCKER_MARIADB_CONTAINERS[@]} -eq 0 ]] && return 0
     command -v docker &>/dev/null || { log_warn "docker not found — skipping Docker MariaDB backup."; return 0; }
 
     local entry container db_user db_name dump_file
@@ -354,7 +354,7 @@ dump_docker_mariadb() {
 dump_docker_postgres() {
     local dump_dir="$1"
 
-    [[ ${#DOCKER_POSTGRES_CONTAINERS[@]+"${#DOCKER_POSTGRES_CONTAINERS[@]}"} -eq 0 ]] && return 0
+    [[ ${#DOCKER_POSTGRES_CONTAINERS[@]} -eq 0 ]] && return 0
     command -v docker &>/dev/null || { log_warn "docker not found — skipping Docker PostgreSQL backup."; return 0; }
 
     local entry container db_user db_name dump_file
