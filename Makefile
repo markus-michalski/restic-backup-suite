@@ -20,15 +20,3 @@ lint: ## Run ShellCheck on all scripts
 	@echo "ShellCheck: all clean"
 
 check: lint ## Run all checks
-
-release: ## Tag and push a release (usage: make release VERSION=1.2.0)
-	@[ -n "$(VERSION)" ] || { echo "Usage: make release VERSION=x.y.z"; exit 1; }
-	@git diff --quiet && git diff --cached --quiet || { echo "Uncommitted changes — commit first"; exit 1; }
-	@grep -q "\[$(VERSION)\]" CHANGELOG.md || { echo "No [$(VERSION)] entry in CHANGELOG.md — add it first"; exit 1; }
-	git tag -a "v$(VERSION)" -m "Release v$(VERSION)"
-	git push origin "v$(VERSION)"
-	gh release create "v$(VERSION)" \
-		--title "v$(VERSION)" \
-		--notes-from-tag \
-		--verify-tag
-	@echo "Released v$(VERSION)"
