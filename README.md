@@ -1,6 +1,6 @@
 # restic-backup-suite
 
-Automated backup and interactive restore toolkit for Linux servers using [restic](https://restic.net/).
+Automated backup, interactive restore, and snapshot inspection toolkit for Linux servers using [restic](https://restic.net/).
 
 Supports SFTP, local, S3, B2, and all other restic backends. Includes Docker DB dumps (MariaDB/MySQL, PostgreSQL), optional native MySQL dumps, systemd service stop/start around the backup window, and a system-wide installer with shell aliases.
 

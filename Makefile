@@ -1,4 +1,4 @@
-SCRIPTS := backup.sh restore.sh install.sh config.example.sh
+SCRIPTS := backup.sh restore.sh inspect.sh install.sh config.example.sh
 
 .PHONY: install uninstall lint check release help
 
