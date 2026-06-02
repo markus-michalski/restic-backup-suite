@@ -6,7 +6,7 @@
 #   1. Checks for restic (and offers install instructions if missing)
 #   2. Creates /etc/restic/ and copies config.example.sh there
 #   3. Creates /var/log/restic/
-#   4. Installs symlinks: /usr/local/bin/restic-backup + restic-restore
+#   4. Installs symlinks: /usr/local/bin/restic-backup + restic-restore + restic-inspect
 #   5. Writes /etc/profile.d/restic-aliases.sh with convenience aliases
 #   6. Optionally installs a daily cron job
 #
@@ -120,7 +120,7 @@ install_symlinks() {
     info "Installing symlinks in $BIN_DIR"
 
     local script target
-    for script in backup restore; do
+    for script in backup restore inspect; do
         target="${BIN_DIR}/restic-${script}"
         if [[ -L "$target" ]]; then
             rm "$target"
@@ -186,6 +186,11 @@ ALIASES
     echo "    restic-unlock      — remove stale lock"
     echo "    restic-rawstats    — raw on-disk size"
     echo ""
+    echo "  Commands (available immediately):"
+    echo "    restic-backup      — run a backup"
+    echo "    restic-restore     — interactive restore from a snapshot"
+    echo "    restic-inspect     — browse and inspect snapshot contents"
+    echo ""
 }
 
 install_cron() {
@@ -217,7 +222,7 @@ uninstall() {
     echo ""
 
     local script
-    for script in backup restore; do
+    for script in backup restore inspect; do
         local target="${BIN_DIR}/restic-${script}"
         if [[ -L "$target" ]]; then
             rm "$target"
@@ -326,6 +331,9 @@ main() {
     echo ""
     echo "  4. Run first backup:"
     echo "       restic-backup"
+    echo ""
+    echo "  5. Inspect a snapshot:"
+    echo "       restic-inspect"
     echo ""
     if [[ "$INSTALL_CRON" == "false" ]]; then
         echo "  5. Set up cron (optional):"
