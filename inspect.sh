@@ -302,9 +302,8 @@ main() {
                 exit 0
                 ;;
             *)
-                log_error "Unknown option: $1"
-                usage
-                exit 1
+                snapshot_arg="$1"
+                shift
                 ;;
         esac
     done
