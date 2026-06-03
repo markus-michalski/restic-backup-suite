@@ -231,7 +231,7 @@ show_db_dumps() {
     restic ls "$SNAPSHOT_ID" >"$tmp_out"
 
     local dump_dir
-    dump_dir="$(grep -oE '/tmp/restic-db-dump-[^/[:space:]]+' "$tmp_out" | head -1 || true)"
+    dump_dir="$(grep -oE '/tmp/restic-db-dump-[^/[:space:]]+' "$tmp_out" | grep -v '\]' | head -1 || true)"
 
     if [[ -z "$dump_dir" ]]; then
         echo "No DB dumps found in this snapshot."
@@ -241,7 +241,7 @@ show_db_dumps() {
 
     echo "DB dump directory: $dump_dir"
     echo ""
-    grep "^${dump_dir}/" "$tmp_out" | sort
+    grep "^${dump_dir}/" "$tmp_out" | sort || true
 
     local count
     count="$(grep -c "^${dump_dir}/" "$tmp_out" || true)"
