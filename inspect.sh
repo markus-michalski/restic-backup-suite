@@ -222,6 +222,35 @@ search_files() {
     rm -f "$tmp_out"
 }
 
+show_db_dumps() {
+    echo ""
+    log_info "Looking for DB dumps in snapshot $SNAPSHOT_ID..."
+
+    local tmp_out
+    tmp_out="$(mktemp)"
+    restic ls "$SNAPSHOT_ID" >"$tmp_out"
+
+    local dump_dir
+    dump_dir="$(grep -oE '/tmp/restic-db-dump-[^/[:space:]]+' "$tmp_out" | head -1 || true)"
+
+    if [[ -z "$dump_dir" ]]; then
+        echo "No DB dumps found in this snapshot."
+        rm -f "$tmp_out"
+        return 0
+    fi
+
+    echo "DB dump directory: $dump_dir"
+    echo ""
+    grep "^${dump_dir}/" "$tmp_out" | sort
+
+    local count
+    count="$(grep -c "^${dump_dir}/" "$tmp_out" || true)"
+    echo ""
+    echo "(${count} dump file(s))"
+
+    rm -f "$tmp_out"
+}
+
 show_diff() {
     echo ""
     echo "Current snapshot: $SNAPSHOT_ID"
@@ -257,10 +286,11 @@ show_menu() {
         echo "  3) List files (with optional path filter)"
         echo "  4) Search files by name/pattern"
         echo "  5) Diff against another snapshot"
+        echo "  6) Show DB dumps"
         echo "  s) Select a different snapshot"
         echo "  q) Quit"
         echo ""
-        read -r -p "Choice [1-5, s, q]: " choice
+        read -r -p "Choice [1-6, s, q]: " choice
 
         case "$choice" in
             1) show_snapshot_details ;;
@@ -268,6 +298,7 @@ show_menu() {
             3) list_files ;;
             4) search_files ;;
             5) show_diff ;;
+            6) show_db_dumps ;;
             s | S) select_snapshot ;;
             q | Q)
                 log_info "Done."
