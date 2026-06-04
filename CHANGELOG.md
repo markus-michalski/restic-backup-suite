@@ -25,6 +25,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Nothing yet
 
+## [1.1.0] - 2026-06-04
+
+### Added
+- add --dump-only flag for testing DB dumps without restic
+- add DB dumps view to inspect menu
+- add inspect.sh for interactive snapshot browsing (#1)
+
+### Changed
+- slim down README, link to Wiki.js documentation
+
+### Fixed
+- support mariadb-dump and custom password env var in Docker dumps
+- strip trailing ] from DB dump dir path in inspect
+- accept positional snapshot ID argument (#2)
+
 ## [1.0.2] - 2026-05-25
 
 ### Changed
@@ -56,7 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell aliases via `/etc/profile.d/restic-aliases.sh`: `restic-snapshots`, `restic-stats`, `restic-check`, `restic-ls`, `restic-mount`, `restic-unlock`, `restic-rawstats`
 - ShellCheck CI via GitHub Actions (syntax check + ShellCheck on all `.sh` files)
 
-[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.1.0...HEAD
 [1.0.0]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.0
 [1.0.1]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.1
 [1.0.2]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.2
+[1.1.0]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.1.0
