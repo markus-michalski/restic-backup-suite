@@ -3,7 +3,7 @@
 # backup.sh — Restic backup with Docker DB dumps and optional service management
 #
 # Usage:
-#   sudo ./backup.sh [--config /path/to/config.sh] [--dry-run] [--help]
+#   sudo ./backup.sh [--config /path/to/config.sh] [--dry-run] [--dump-only] [--help]
 #
 # Requires: restic, docker (optional), mysqldump (optional), sftp (optional)
 #
@@ -26,6 +26,7 @@ readonly SCRIPT_NAME
 CONFIG_FILE="${SCRIPT_DIR}/config.sh"
 [[ ! -f "$CONFIG_FILE" ]] && CONFIG_FILE="/etc/restic/config.sh"
 DRY_RUN=false
+DUMP_ONLY=false
 
 # Runtime state
 BACKUP_SUCCESS=false
@@ -96,12 +97,14 @@ Backup server files and databases to a restic repository.
 OPTIONS:
     --config FILE   Path to config file (default: ${SCRIPT_DIR}/config.sh)
     --dry-run       Show what would be backed up without running restic
+    --dump-only     Run DB dumps only — no restic, no SFTP, no service stops
     -h, --help      Show this help message
 
 EXAMPLE:
     sudo $SCRIPT_NAME
     sudo $SCRIPT_NAME --config /etc/restic/config.sh
     sudo $SCRIPT_NAME --dry-run
+    sudo $SCRIPT_NAME --dump-only
 EOF
 }
 
@@ -479,6 +482,10 @@ main() {
                 DRY_RUN=true
                 shift
                 ;;
+            --dump-only)
+                DUMP_ONLY=true
+                shift
+                ;;
             -h | --help)
                 usage
                 exit 0
@@ -494,15 +501,35 @@ main() {
     check_root
     load_config
     check_dependencies
-    setup_ssh_config
-    test_sftp_connection
-    init_repo_if_needed
 
     # Create temp directory for DB dumps
     local db_dump_dir
     db_dump_dir="$(mktemp -d /tmp/restic-db-dump-XXXXXX)"
     chmod 700 "$db_dump_dir"
     TEMP_DIRS+=("$db_dump_dir")
+
+    if [[ "$DUMP_ONLY" == "true" ]]; then
+        log_info "Running in dump-only mode — no restic backup will be performed."
+        BACKUP_SUCCESS=true
+        dump_native_mysql "$db_dump_dir"
+        dump_docker_mariadb "$db_dump_dir"
+        dump_docker_postgres "$db_dump_dir"
+        log_info "Dump results in: $db_dump_dir"
+        find "$db_dump_dir" -name "*.sql" -exec du -sh {} \; | sort -k2 | while IFS=$'\t' read -r size file; do
+            log_info "  $size  $(basename "$file")"
+        done
+        if [[ "$BACKUP_SUCCESS" == "true" ]]; then
+            log_info "All dumps completed successfully."
+            exit 0
+        else
+            log_error "One or more dumps failed."
+            exit 1
+        fi
+    fi
+
+    setup_ssh_config
+    test_sftp_connection
+    init_repo_if_needed
 
     stop_services
     dump_native_mysql "$db_dump_dir"
