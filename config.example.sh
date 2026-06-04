@@ -127,7 +127,8 @@ REPO_CHECK_SUBSET="5%"
 # =============================================================================
 
 # Set to "true" to enable dumping MySQL/MariaDB databases installed natively
-# on the host (not in Docker). Requires mysqldump in PATH and root access.
+# on the host (not in Docker). Requires mysqldump or mariadb-dump in PATH and root access.
+# The available binary is detected automatically (mariadb-dump takes precedence).
 MYSQL_BACKUP_ENABLED=false
 
 # Databases to exclude from native MySQL dumps.
@@ -138,21 +139,25 @@ MYSQL_EXCLUDE_DBS="information_schema performance_schema mysql sys"
 # DOCKER MARIADB / MYSQL CONTAINERS
 # =============================================================================
 
-# List of Docker MariaDB/MySQL containers to dump before backup.
+# List of Docker MariaDB or MySQL containers to dump before backup.
+# Works for both — mysqldump and mariadb-dump are protocol-compatible.
 # Format: "container_name:db_user:db_name[:password_env_var]"
 #
 # password_env_var: name of the env var inside the container that holds the
 # root/admin password. Defaults to MYSQL_ROOT_PASSWORD if omitted.
-# Use when a container uses a non-standard name (e.g. MARIADB_ROOT_PASSWORD,
-# DB_ROOT_PASS).
+# Common values:
+#   MYSQL_ROOT_PASSWORD      — MySQL and older MariaDB images (default)
+#   MARIADB_ROOT_PASSWORD    — newer official MariaDB images
+#   DB_ROOT_PASS             — custom setups
 #
-# The dump is created inside the container via `docker exec`.
-# Works with both mysqldump and mariadb-dump (auto-detected per container).
+# The dump binary is auto-detected per container (mariadb-dump preferred,
+# falls back to mysqldump).
 #
 # Example:
 #   DOCKER_MARIADB_CONTAINERS=(
-#       "my-mariadb:root:app_db"                          # uses MYSQL_ROOT_PASSWORD
-#       "another-db:root:shop_db:MARIADB_ROOT_PASSWORD"   # newer official image
+#       "my-mysql:root:app_db"                            # MySQL, uses MYSQL_ROOT_PASSWORD
+#       "my-mariadb:root:shop_db"                         # older MariaDB, uses MYSQL_ROOT_PASSWORD
+#       "new-mariadb:root:wiki_db:MARIADB_ROOT_PASSWORD"  # newer official MariaDB image
 #       "custom-db:root:mydb:DB_ROOT_PASS"                # custom env var name
 #   )
 DOCKER_MARIADB_CONTAINERS=(
