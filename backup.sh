@@ -3,7 +3,7 @@
 # backup.sh — Restic backup with Docker DB dumps and optional service management
 #
 # Usage:
-#   sudo ./backup.sh [--config /path/to/config.sh] [--dry-run] [--help]
+#   sudo ./backup.sh [--config /path/to/config.sh] [--dry-run] [--dump-only] [--help]
 #
 # Requires: restic, docker (optional), mysqldump (optional), sftp (optional)
 #
@@ -26,6 +26,7 @@ readonly SCRIPT_NAME
 CONFIG_FILE="${SCRIPT_DIR}/config.sh"
 [[ ! -f "$CONFIG_FILE" ]] && CONFIG_FILE="/etc/restic/config.sh"
 DRY_RUN=false
+DUMP_ONLY=false
 
 # Runtime state
 BACKUP_SUCCESS=false
@@ -96,12 +97,14 @@ Backup server files and databases to a restic repository.
 OPTIONS:
     --config FILE   Path to config file (default: ${SCRIPT_DIR}/config.sh)
     --dry-run       Show what would be backed up without running restic
+    --dump-only     Run DB dumps only — no restic, no SFTP, no service stops
     -h, --help      Show this help message
 
 EXAMPLE:
     sudo $SCRIPT_NAME
     sudo $SCRIPT_NAME --config /etc/restic/config.sh
     sudo $SCRIPT_NAME --dry-run
+    sudo $SCRIPT_NAME --dump-only
 EOF
 }
 
@@ -325,9 +328,11 @@ dump_docker_mariadb() {
     [[ ${#DOCKER_MARIADB_CONTAINERS[@]} -eq 0 ]] && return 0
     command -v docker &>/dev/null || { log_warn "docker not found — skipping Docker MariaDB backup."; return 0; }
 
-    local entry container db_user db_name dump_file
+    local entry container db_user db_name pw_env dump_file
     for entry in "${DOCKER_MARIADB_CONTAINERS[@]}"; do
-        IFS=: read -r container db_user db_name <<<"$entry"
+        IFS=: read -r container db_user db_name pw_env <<<"$entry"
+        pw_env="${pw_env:-MYSQL_ROOT_PASSWORD}"
+        [[ "$pw_env" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { log_error "Invalid password env var name for ${container}: ${pw_env}"; BACKUP_SUCCESS=false; continue; }
         dump_file="${dump_dir}/${container}_${db_name}.sql"
 
         if docker ps --format '{{.Names}}' | grep -Fxq "$container"; then
@@ -335,9 +340,9 @@ dump_docker_mariadb() {
             if docker exec \
                 -e DB_NAME="$db_name" \
                 -e DB_USER="$db_user" \
+                -e BACKUP_PW_VAR="$pw_env" \
                 "$container" \
-                sh -c 'exec mysqldump -u "$DB_USER" -p"$MYSQL_ROOT_PASSWORD" \
-                    --single-transaction --quick --routines --triggers --events "$DB_NAME"' \
+                sh -c 'cmd=mysqldump; command -v mariadb-dump >/dev/null 2>&1 && cmd=mariadb-dump; eval "pw=\$$BACKUP_PW_VAR"; exec "$cmd" -u "$DB_USER" -p"${pw}" --single-transaction --quick --routines --triggers --events "$DB_NAME"' \
                 >"$dump_file"; then
                 log_info "Dumped: ${container}/${db_name} ($(du -sh "$dump_file" | cut -f1))"
             else
@@ -477,6 +482,10 @@ main() {
                 DRY_RUN=true
                 shift
                 ;;
+            --dump-only)
+                DUMP_ONLY=true
+                shift
+                ;;
             -h | --help)
                 usage
                 exit 0
@@ -492,15 +501,35 @@ main() {
     check_root
     load_config
     check_dependencies
-    setup_ssh_config
-    test_sftp_connection
-    init_repo_if_needed
 
     # Create temp directory for DB dumps
     local db_dump_dir
     db_dump_dir="$(mktemp -d /tmp/restic-db-dump-XXXXXX)"
     chmod 700 "$db_dump_dir"
     TEMP_DIRS+=("$db_dump_dir")
+
+    if [[ "$DUMP_ONLY" == "true" ]]; then
+        log_info "Running in dump-only mode — no restic backup will be performed."
+        BACKUP_SUCCESS=true
+        dump_native_mysql "$db_dump_dir"
+        dump_docker_mariadb "$db_dump_dir"
+        dump_docker_postgres "$db_dump_dir"
+        log_info "Dump results in: $db_dump_dir"
+        find "$db_dump_dir" -name "*.sql" -exec du -sh {} \; | sort -k2 | while IFS=$'\t' read -r size file; do
+            log_info "  $size  $(basename "$file")"
+        done
+        if [[ "$BACKUP_SUCCESS" == "true" ]]; then
+            log_info "All dumps completed successfully."
+            exit 0
+        else
+            log_error "One or more dumps failed."
+            exit 1
+        fi
+    fi
+
+    setup_ssh_config
+    test_sftp_connection
+    init_repo_if_needed
 
     stop_services
     dump_native_mysql "$db_dump_dir"
