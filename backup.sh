@@ -325,9 +325,11 @@ dump_docker_mariadb() {
     [[ ${#DOCKER_MARIADB_CONTAINERS[@]} -eq 0 ]] && return 0
     command -v docker &>/dev/null || { log_warn "docker not found — skipping Docker MariaDB backup."; return 0; }
 
-    local entry container db_user db_name dump_file
+    local entry container db_user db_name pw_env dump_file
     for entry in "${DOCKER_MARIADB_CONTAINERS[@]}"; do
-        IFS=: read -r container db_user db_name <<<"$entry"
+        IFS=: read -r container db_user db_name pw_env <<<"$entry"
+        pw_env="${pw_env:-MYSQL_ROOT_PASSWORD}"
+        [[ "$pw_env" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { log_error "Invalid password env var name for ${container}: ${pw_env}"; BACKUP_SUCCESS=false; continue; }
         dump_file="${dump_dir}/${container}_${db_name}.sql"
 
         if docker ps --format '{{.Names}}' | grep -Fxq "$container"; then
@@ -335,9 +337,9 @@ dump_docker_mariadb() {
             if docker exec \
                 -e DB_NAME="$db_name" \
                 -e DB_USER="$db_user" \
+                -e BACKUP_PW_VAR="$pw_env" \
                 "$container" \
-                sh -c 'exec mysqldump -u "$DB_USER" -p"$MYSQL_ROOT_PASSWORD" \
-                    --single-transaction --quick --routines --triggers --events "$DB_NAME"' \
+                sh -c 'cmd=mysqldump; command -v mariadb-dump >/dev/null 2>&1 && cmd=mariadb-dump; eval "pw=\$$BACKUP_PW_VAR"; exec "$cmd" -u "$DB_USER" -p"${pw}" --single-transaction --quick --routines --triggers --events "$DB_NAME"' \
                 >"$dump_file"; then
                 log_info "Dumped: ${container}/${db_name} ($(du -sh "$dump_file" | cut -f1))"
             else

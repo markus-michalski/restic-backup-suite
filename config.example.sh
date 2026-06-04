@@ -139,15 +139,21 @@ MYSQL_EXCLUDE_DBS="information_schema performance_schema mysql sys"
 # =============================================================================
 
 # List of Docker MariaDB/MySQL containers to dump before backup.
-# Format: "container_name:db_user:db_name"
+# Format: "container_name:db_user:db_name[:password_env_var]"
 #
-# The container must have MYSQL_ROOT_PASSWORD set as an environment variable.
+# password_env_var: name of the env var inside the container that holds the
+# root/admin password. Defaults to MYSQL_ROOT_PASSWORD if omitted.
+# Use when a container uses a non-standard name (e.g. MARIADB_ROOT_PASSWORD,
+# DB_ROOT_PASS).
+#
 # The dump is created inside the container via `docker exec`.
+# Works with both mysqldump and mariadb-dump (auto-detected per container).
 #
 # Example:
 #   DOCKER_MARIADB_CONTAINERS=(
-#       "my-mariadb:root:app_db"
-#       "another-db:root:shop_db"
+#       "my-mariadb:root:app_db"                          # uses MYSQL_ROOT_PASSWORD
+#       "another-db:root:shop_db:MARIADB_ROOT_PASSWORD"   # newer official image
+#       "custom-db:root:mydb:DB_ROOT_PASS"                # custom env var name
 #   )
 DOCKER_MARIADB_CONTAINERS=(
     # "mycontainer:root:mydb"
