@@ -5,7 +5,7 @@
 # Usage:
 #   sudo ./backup.sh [--config /path/to/config.sh] [--dry-run] [--dump-only] [--help]
 #
-# Requires: restic, docker (optional), mysqldump (optional), sftp (optional)
+# Requires: restic, docker (optional), mysqldump/mariadb-dump (optional), sftp (optional)
 #
 
 set -o errexit
@@ -295,13 +295,29 @@ dump_native_mysql() {
     local dump_dir="$1"
 
     [[ "${MYSQL_BACKUP_ENABLED:-false}" == "true" ]] || return 0
-    command -v mysqldump &>/dev/null || { log_warn "mysqldump not found — skipping native MySQL backup."; return 0; }
 
-    log_info "Dumping native MySQL/MariaDB databases..."
+    local dump_cmd mysql_cmd
+    if command -v mariadb-dump &>/dev/null; then
+        dump_cmd="mariadb-dump"
+    elif command -v mysqldump &>/dev/null; then
+        dump_cmd="mysqldump"
+    else
+        log_warn "Neither mariadb-dump nor mysqldump found — skipping native MySQL backup."
+        return 0
+    fi
+    if command -v mariadb &>/dev/null; then
+        mysql_cmd="mariadb"
+    elif command -v mysql &>/dev/null; then
+        mysql_cmd="mysql"
+    else
+        log_warn "Neither mariadb nor mysql client found — skipping native MySQL backup."
+        return 0
+    fi
+
+    log_info "Dumping native MySQL/MariaDB databases (using ${dump_cmd})..."
 
     local db
     while IFS= read -r db; do
-        # Skip excluded databases
         local excluded=false
         local excl
         for excl in ${MYSQL_EXCLUDE_DBS:-}; do
@@ -311,14 +327,15 @@ dump_native_mysql() {
 
         local dump_file="${dump_dir}/${db}.sql"
         log_info "Dumping database: $db"
-        if mysqldump --single-transaction --quick --lock-tables=false \
+        if "$dump_cmd" --single-transaction --quick --lock-tables=false \
             --routines --triggers "$db" >"$dump_file"; then
             log_info "Dumped: $db ($(du -sh "$dump_file" | cut -f1))"
         else
             log_error "Failed to dump database: $db"
+            rm -f "$dump_file"
             BACKUP_SUCCESS=false
         fi
-    done < <(mysql -N -e "SHOW DATABASES;" 2>/dev/null \
+    done < <("$mysql_cmd" -N -e "SHOW DATABASES;" 2>/dev/null \
         | grep -Ev "^(information_schema|performance_schema|mysql|sys)$")
 }
 
@@ -336,7 +353,7 @@ dump_docker_mariadb() {
         dump_file="${dump_dir}/${container}_${db_name}.sql"
 
         if docker ps --format '{{.Names}}' | grep -Fxq "$container"; then
-            log_info "Dumping MariaDB container: ${container}/${db_name}"
+            log_info "Dumping MariaDB/MySQL container: ${container}/${db_name}"
             if docker exec \
                 -e DB_NAME="$db_name" \
                 -e DB_USER="$db_user" \
