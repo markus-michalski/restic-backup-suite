@@ -31,6 +31,7 @@ DUMP_ONLY=false
 # Runtime state
 BACKUP_SUCCESS=false
 SERVICES_STOPPED=()
+DOCKER_CONTAINERS_STOPPED=()
 TEMP_DIRS=()
 
 # =============================================================================
@@ -74,6 +75,7 @@ cleanup() {
 
     # Restart services that were stopped
     restart_services
+    restart_docker_services
 
     if [[ $exit_code -ne 0 ]]; then
         log_error "Script exited with code: $exit_code"
@@ -121,6 +123,12 @@ load_config() {
 
     # shellcheck source=/dev/null
     source "$CONFIG_FILE"
+
+    # Normalize optional arrays so set -o nounset never aborts on missing config vars
+    [[ -v SERVICES_TO_STOP ]]            || declare -ga SERVICES_TO_STOP=()
+    [[ -v DOCKER_SERVICES_TO_STOP ]]     || declare -ga DOCKER_SERVICES_TO_STOP=()
+    [[ -v DOCKER_MARIADB_CONTAINERS ]]   || declare -ga DOCKER_MARIADB_CONTAINERS=()
+    [[ -v DOCKER_POSTGRES_CONTAINERS ]]  || declare -ga DOCKER_POSTGRES_CONTAINERS=()
 
     # Apply config to environment
     export RESTIC_PASSWORD_FILE
@@ -284,6 +292,67 @@ restart_services() {
 
     if [[ ${#SERVICES_STOPPED[@]} -gt 0 ]]; then
         sleep "${SERVICE_START_WAIT:-3}"
+    fi
+}
+
+stop_docker_services() {
+    [[ ${#DOCKER_SERVICES_TO_STOP[@]} -eq 0 ]] && return 0
+    [[ "$DRY_RUN" == "true" ]] && { log_info "[DRY RUN] Would stop Docker services: ${DOCKER_SERVICES_TO_STOP[*]}"; return 0; }
+    command -v docker &>/dev/null || { log_warn "docker not found — skipping Docker service stop."; return 0; }
+
+    local entry
+    for entry in "${DOCKER_SERVICES_TO_STOP[@]}"; do
+        if [[ "$entry" == *:* ]]; then
+            local compose_file service_name
+            compose_file="${entry%%:*}"
+            service_name="${entry##*:}"
+            if [[ ! -f "$compose_file" ]]; then
+                log_warn "Docker Compose file not found (skipped): $compose_file"
+                continue
+            fi
+            if docker compose -f "$compose_file" ps --quiet "$service_name" 2>/dev/null | grep -q .; then
+                log_info "Stopping Docker Compose service: ${compose_file}:${service_name}"
+                docker compose -f "$compose_file" stop "$service_name"
+                DOCKER_CONTAINERS_STOPPED+=("$entry")
+            else
+                log_warn "Docker Compose service not running (skipped): ${service_name}"
+            fi
+        else
+            if docker ps --format '{{.Names}}' | grep -Fxq "$entry"; then
+                log_info "Stopping Docker container: $entry"
+                docker stop "$entry"
+                DOCKER_CONTAINERS_STOPPED+=("$entry")
+            else
+                log_warn "Docker container not running (skipped): $entry"
+            fi
+        fi
+    done
+
+    if [[ ${#DOCKER_CONTAINERS_STOPPED[@]} -gt 0 ]]; then
+        sleep "${DOCKER_STOP_WAIT:-2}"
+    fi
+}
+
+# shellcheck disable=SC2317  # Called via cleanup trap
+restart_docker_services() {
+    [[ ${#DOCKER_CONTAINERS_STOPPED[@]} -eq 0 ]] && return 0
+
+    local entry
+    for entry in "${DOCKER_CONTAINERS_STOPPED[@]}"; do
+        if [[ "$entry" == *:* ]]; then
+            local compose_file service_name
+            compose_file="${entry%%:*}"
+            service_name="${entry##*:}"
+            log_info "Starting Docker Compose service: ${compose_file}:${service_name}"
+            docker compose -f "$compose_file" start "$service_name" || log_warn "Failed to start Docker Compose service: ${service_name}"
+        else
+            log_info "Starting Docker container: $entry"
+            docker start "$entry" || log_warn "Failed to start Docker container: $entry"
+        fi
+    done
+
+    if [[ ${#DOCKER_CONTAINERS_STOPPED[@]} -gt 0 ]]; then
+        sleep "${DOCKER_START_WAIT:-3}"
     fi
 }
 
@@ -549,6 +618,7 @@ main() {
     init_repo_if_needed
 
     stop_services
+    stop_docker_services
     dump_native_mysql "$db_dump_dir"
     dump_docker_mariadb "$db_dump_dir"
     dump_docker_postgres "$db_dump_dir"

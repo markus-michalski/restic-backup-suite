@@ -199,3 +199,27 @@ SERVICE_STOP_WAIT=2
 
 # Seconds to wait after starting services to let them initialize.
 SERVICE_START_WAIT=3
+
+# Docker Compose services or standalone containers to stop before the file
+# backup and restart afterwards. Use this to ensure consistent snapshots of
+# data directories while the application is not writing.
+#
+# NOTE: Do NOT add DB containers here — DB dumps run against the live database
+#       and require the container to be running.
+#
+# Format per entry:
+#   "/path/to/docker-compose.yml:service-name"  — Compose-managed service
+#   "container-name"                             — standalone docker run container
+#
+# Example:
+#   DOCKER_SERVICES_TO_STOP=(
+#       "/srv/seafile/docker-compose.yml:seafile"
+#       "some-standalone-container"
+#   )
+DOCKER_SERVICES_TO_STOP=()
+
+# Seconds to wait after stopping Docker services before starting the backup.
+DOCKER_STOP_WAIT=2
+
+# Seconds to wait after starting Docker services to let them initialize.
+DOCKER_START_WAIT=3
