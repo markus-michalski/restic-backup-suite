@@ -223,3 +223,14 @@ DOCKER_STOP_WAIT=2
 
 # Seconds to wait after starting Docker services to let them initialize.
 DOCKER_START_WAIT=3
+
+# =============================================================================
+# MONITORING
+# =============================================================================
+
+# Path to the success marker file written after each successful restic backup.
+# External monitoring tools verify that this file was updated within your
+# backup interval (e.g. 24 h for daily backups). A stale marker means either
+# the backup failed or the marker could not be written — check the log.
+# Set to "" to disable writing the marker.
+SUCCESS_MARKER_FILE="/var/backup/.last_restic_success"
