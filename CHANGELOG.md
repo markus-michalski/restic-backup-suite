@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Nothing yet
+- `SUCCESS_MARKER_FILE` config option: writes a timestamp file (default `/var/backup/.last_restic_success`) after each successful backup for external monitoring (check file age vs. backup interval)
 
 ### Changed
 - Nothing yet

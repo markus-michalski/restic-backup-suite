@@ -553,6 +553,32 @@ verify_backup() {
 }
 
 # =============================================================================
+# Success marker
+# =============================================================================
+
+write_success_marker() {
+    local marker_file="${SUCCESS_MARKER_FILE:-/var/backup/.last_restic_success}"
+    [[ -z "$marker_file" ]] && return 0
+
+    local marker_dir
+    marker_dir="$(dirname "$marker_file")"
+
+    if [[ ! -d "$marker_dir" ]]; then
+        if ! mkdir -p "$marker_dir"; then
+            log_warn "Could not create directory for success marker: $marker_dir"
+            return 0
+        fi
+    fi
+
+    if printf '%s\n' "$(date --iso-8601=seconds)" >"$marker_file"; then
+        chmod 600 "$marker_file" 2>/dev/null || true
+        log_info "Success marker written: $marker_file"
+    else
+        log_warn "Could not write success marker: $marker_file"
+    fi
+}
+
+# =============================================================================
 # Main
 # =============================================================================
 
@@ -628,6 +654,9 @@ main() {
 
     if [[ "$BACKUP_SUCCESS" == "true" ]]; then
         log_info "Backup run finished successfully."
+        if [[ "$DRY_RUN" != "true" ]]; then
+            write_success_marker
+        fi
         exit 0
     else
         log_error "Backup run finished with errors."
