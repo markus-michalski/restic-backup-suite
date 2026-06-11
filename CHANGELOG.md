@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `SUCCESS_MARKER_FILE` config option: writes a timestamp file (default `/var/backup/.last_restic_success`) after each successful backup for external monitoring (check file age vs. backup interval)
+- Nothing yet
 
 ### Changed
 - Nothing yet
@@ -24,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Nothing yet
+
+## [1.2.0] - 2026-06-11
+
+### Added
+- write success marker file for monitoring (#8)
+- add DOCKER_SERVICES_TO_STOP for consistent file snapshots
+
+### Fixed
+- auto-detect mariadb-dump/mariadb for native MySQL dumps
 
 ## [1.1.0] - 2026-06-04
 
@@ -71,8 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell aliases via `/etc/profile.d/restic-aliases.sh`: `restic-snapshots`, `restic-stats`, `restic-check`, `restic-ls`, `restic-mount`, `restic-unlock`, `restic-rawstats`
 - ShellCheck CI via GitHub Actions (syntax check + ShellCheck on all `.sh` files)
 
-[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/markus-michalski/restic-backup-suite/compare/v1.2.0...HEAD
 [1.0.0]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.0
 [1.0.1]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.1
 [1.0.2]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.0.2
 [1.1.0]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.1.0
+[1.2.0]: https://github.com/markus-michalski/restic-backup-suite/releases/tag/v1.2.0
